@@ -1,0 +1,6 @@
+{
+    "require": {
+        "statickidz/php-google-translate-free": "^1.2",
+        "slim/psr7": "^1.5"
+    }
+}
