@@ -3,6 +3,7 @@
 session_start();
 
 define( 'BASEDIR',  dirname(__DIR__, 1)  );
+define( 'CHEM_APIKEY', 'AJ1teSjwFA8YmUArnJaK5vCJG7ZAxkNt' );
 
 require BASEDIR . '/vendor/autoload.php';
 use Slim\Factory\AppFactory;

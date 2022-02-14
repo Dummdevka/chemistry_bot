@@ -14,7 +14,8 @@ $app->get('/', function( Request $request, Response $response, $args ) {
 //Get info about a chemical element
 $app->group( '/data', function( RouteCollectorProxy $group ) {
     $group->get('', function( Request $request, Response $response, $args ) {
-        $response->getBody()->write( 'Get element data!' );
+        $res = new core\ChemData();
+        var_dump( $res->getRecords( ['filter', 'element'] , ['includeElements'=>['Na']]));
         return $response;
     });
     $group->get( '/element/{element}', function( Request $request, Response $response, $args ) {
