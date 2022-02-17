@@ -27,7 +27,7 @@ class ChemData
         $element = ucfirst( $args['element'] );
 
         if( !$element ) {
-            return $response->withStatus( 404 );
+            return $response->withStatus( 404, 'No element set' );
         }
 
         $url = [ 'filter', 'element' ];
@@ -40,7 +40,19 @@ class ChemData
     }
 
     public function getDataByName( Request $request, Response $response, $args ) : Response {
-        return $response;
+        $name = ucfirst( $args['name'] );
+
+        if( !$name ) {
+            return $response->withStatus( 404, 'No name set' );
+        }
+
+        $url = [ 'filter', 'name' ];
+        $params = ['name' => "$name"];
+
+        $result = $this->getData( $url, $params );
+
+        $response->getBody()->write( $result );
+        return $response->withHeader('Content-Type', 'application/json' )->withStatus( 200 );
     }
     public function getDataByFormula( Request $request, Response $response, $args ) : Response {
         return $response;
@@ -53,7 +65,7 @@ class ChemData
         $recordIds = $this->getRecords( $url_arr, $params );
 
         curl_reset( $this->ch );
-        $recordId = $recordIds[1];
+        $recordId = $recordIds[0];
         $url = $this->base_url . 'records/batch';
 
         //What are we looking for?
@@ -127,12 +139,9 @@ class ChemData
     }
 
     public function getRecordId ( string $queryId ) {
-        $url = $this->base_url . "filter/$queryId/results";
+        $url = $this->base_url . "filter/$queryId/results?count=1";
         //This is a GET request
         curl_setopt( $this->ch, CURLOPT_CUSTOMREQUEST, 'GET' );
-        //Retrieve just 1 publication
-        curl_setopt( $this->ch, CURLOPT_POSTFIELDS, json_encode(['count' => 1]) );
-
         $this->setCurlOpt( $url );
 
         $response = curl_exec( $this->ch );
