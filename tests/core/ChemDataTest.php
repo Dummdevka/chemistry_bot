@@ -18,4 +18,12 @@ class ChemDataTest extends TestCase
         $actual = $chemData->getRecordId('92e98172-541e-4ff4-bf98-8cea2c5edb7d');
         $expected = [];
         $this->assertEquals($expected, $actual, (__LINE__ - 2) . ' failed miserably.');
-}}
+    }
+    public function  test_getData() : void {
+        $chemData = new core\ChemData();
+        $actual = $chemData->getData([ 'filter', 'element' ], ['includeElements' => ['Na']]);
+        $expected = [];
+        var_dump( $actual );
+        $this->assertEquals($expected, $actual, (__LINE__ - 2) . ' failed miserably.');
+    }
+}

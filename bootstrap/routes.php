@@ -14,22 +14,14 @@ $app->get('/', function( Request $request, Response $response, $args ) {
 //Get info about a chemical element
 $app->group( '/data', function( RouteCollectorProxy $group ) {
     $group->get('', function( Request $request, Response $response, $args ) {
-        $res = new core\ChemData();
-        var_dump( $res->getRecords( ['filter', 'element'] , ['includeElements'=>['Na']]));
+        $response->body()->write('You can search by element/name/formula/');
         return $response;
     });
-    $group->get( '/element/{element}', function( Request $request, Response $response, $args ) {
-        $response->getBody()->write( 'Element info' );
-        return $response;
-    });
+    $group->get( '/element/{element}', core\ChemData::class . ':getDataByElement' );
+
     //Get info about a chemical element by its name
-    $group->get( '/name/{name}', function( Request $request, Response $response, $args ) {
-        $response->getBody()->write( 'Element info by name' );
-        return $response;
-    });
+    $group->get( '/name/{name}', core\ChemData::class . ':getDataByName' );
+
     //Get info about a chemical element
-    $group->get( '/formula/{formula}', function( Request $request, Response $response, $args ) {
-        $response->getBody()->write( 'Formula info' );
-        return $response;
-    });
+    $group->get( '/formula/{formula}', core\ChemData::class . ':getDataByFormula' );
 });

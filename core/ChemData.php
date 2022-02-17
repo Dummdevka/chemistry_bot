@@ -2,6 +2,9 @@
 
 namespace core;
 
+use Psr\Http\Message\RequestInterface as Request;
+use Psr\Http\Message\ResponseInterface as Response;
+
 class ChemData
 {
     public $conn;
@@ -19,51 +22,70 @@ class ChemData
         //Options
         curl_setopt_array( $this->ch, $this->options );
     }
-    //POST METHOD
-    public function getDataByElement( string $element ) : array {
-        //Form the url
-        $url = '/filter/element';
-        $params = [
-            'includeElements' => [trim($element)]
-        ];
 
-        //Get the data
+    public function getDataByElement( Request $request, Response $response, $args ) : Response {
+        $element = ucfirst( $args['element'] );
 
+        if( !$element ) {
+            return $response->withStatus( 404 );
+        }
 
-        //returns array - void - nothing could be found
-        //if false - there is an error
+        $url = [ 'filter', 'element' ];
+        $params = ['includeElements' => ["$element"]]; //This format is required
+
+        $result = $this->getData( $url, $params );
+
+        $response->getBody()->write( $result );
+        return $response->withHeader('Content-Type', 'application/json' )->withStatus( 200 );
     }
-    public function getDataByName( string $name) {
 
+    public function getDataByName( Request $request, Response $response, $args ) : Response {
+        return $response;
     }
-    public function getDataByFormula( string $formula ) {
+    public function getDataByFormula( Request $request, Response $response, $args ) : Response {
+        return $response;
+    }
 
-    }
+    //Retrieves data about the required element/formula
+    //Takes in an array of url parts and $params which define the search type
     public function getData ( array $url_arr, array $params ) {
         //List of record ids
         $recordIds = $this->getRecords( $url_arr, $params );
 
+        curl_reset( $this->ch );
         $recordId = $recordIds[1];
         $url = $this->base_url . 'records/batch';
-        $params = [
+
+        //What are we looking for?
+        $search_params = [
             "fields" => [
-            "CommonName",
-            "SMILES",
-            "InChI",
-            "Formla",
-            "MonoisotopicMass"]
+                "CommonName",
+                "SMILES",
+                "InChI",
+                "Formula"
+            ],
+            "recordIds" => [
+                "$recordId"
+            ]
         ];
-        $this->setCurlOpt( $url, $params );
+        curl_setopt( $this->ch,CURLOPT_POST, 1 );
+        $this->setCurlOpt( $url, $search_params );
 
-        $response = curl_exec( $this->ch );
+        //Save the data because it outputs on execution
+        ob_start();
+        $q = curl_exec( $this->ch );
+        $res = ob_get_contents();
+        ob_end_clean();
+
         if( curl_errno( $this->ch )){
-            return 'Connection error:' . curl_error($this->ch);
-            //http_response_code( curl_getinfo( $this->ch, CURL_ER))
+            $info = curl_getinfo($this->ch);
+            return $info['request_header'];
         }
-        return $response['records'];
 
+        return $res;
     }
-    public function getRecords( array $url_arr, array $params ) {
+
+    public function getRecords ( array $url_arr, array $params ) {
         //Create request url
         $url = $this->base_url . implode( '/', $url_arr );
         //Setting the params of the request
@@ -71,10 +93,9 @@ class ChemData
         //Get the queryID
         $queryId = curl_exec( $this->ch );
         $queryId = json_decode( $queryId, true );
+
         if( curl_errno( $this->ch )){
-            //return curl_getinfo( $this->ch );
             return curl_error($this->ch);
-            //http_response_code( curl_getinfo( $this->ch, CURL_ER))
         }
         //Check the query
         $check = $this->checkQuery( $queryId['queryId'] );
@@ -83,10 +104,11 @@ class ChemData
         }
         //Get record ids
         $recordIds = $this->getRecordId( $queryId['queryId'] );
-        return $recordIds;
-        
+
+        return $recordIds['results'];
     }
-    public function checkQuery( string $queryId ) {
+
+    public function checkQuery ( string $queryId ) {
         //Setting URL
         $url = $this->base_url . "/filter/$queryId/status";
 
@@ -102,21 +124,27 @@ class ChemData
         } else {
             return 'Status ' . $response['status'] . ' ' . $response['message'];
         }
-
     }
-    public function getRecordId( string $queryId ) {
-        $url = $this->base_url . "filter/$queryId/results";
-        curl_setopt( $this->ch, CURLOPT_CUSTOMREQUEST, 'GET' );
-        $this->setCurlOpt( $url );
-        $response = curl_exec( $this->ch );
 
+    public function getRecordId ( string $queryId ) {
+        $url = $this->base_url . "filter/$queryId/results";
+        //This is a GET request
+        curl_setopt( $this->ch, CURLOPT_CUSTOMREQUEST, 'GET' );
+        //Retrieve just 1 publication
+        curl_setopt( $this->ch, CURLOPT_POSTFIELDS, json_encode(['count' => 1]) );
+
+        $this->setCurlOpt( $url );
+
+        $response = curl_exec( $this->ch );
         //Error handling
         if( curl_errno( $this->ch )){
             return curl_error( $this->ch );
         }
+
         //Array if record ids
         return json_decode( $response, true );
     }
+
     public function setCurlOpt ( string $url, array $params = [] ) : void {
         $headers = array(
             "Content-Type: application/json",
@@ -126,6 +154,9 @@ class ChemData
         //Api key auth 
         curl_setopt( $this->ch, CURLOPT_HTTPHEADER, $headers );
         curl_setopt( $this->ch, CURLOPT_URL, $url );
+        curl_setopt($this->ch, CURLINFO_HEADER_OUT, true);
+        curl_setopt($this->ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
+        curl_setopt($this->ch, CURLOPT_SSL_VERIFYPEER, true);
         if( !empty( $params )) {
             curl_setopt( $this->ch, CURLOPT_POSTFIELDS, json_encode($params) );
         }
