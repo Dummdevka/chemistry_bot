@@ -17,11 +17,11 @@ $app->group( '/data', function( RouteCollectorProxy $group ) {
         $response->body()->write('You can search by element/name/formula/');
         return $response;
     });
-    $group->get( '/element/{element}', core\ChemData::class . ':getDataByElement' );
+    $group->get( '/element/{element:[a-zA-Z]+}', core\ChemData::class . ':getDataByElement' );
 
     //Get info about a chemical element by its name
-    $group->get( '/name/{name}', core\ChemData::class . ':getDataByName' );
+    $group->get( '/name/{name:[a-zA-Z]+}', core\ChemData::class . ':getDataByName' );
 
     //Get info about a chemical element
-    $group->get( '/formula/{formula}', core\ChemData::class . ':getDataByFormula' );
+    $group->get( '/formula/{formula:[a-zA-Z1-9]+}', core\ChemData::class . ':getDataByFormula' );
 });
