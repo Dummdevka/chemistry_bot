@@ -43,7 +43,8 @@ class ChemData
         $name = ucfirst( $args['name'] );
 
         if( !$name ) {
-            return $response->withStatus( 404, 'No name set' );
+            return $response->withStatus( 404, 'No name set' )->withHeader('Content-Type', 'text/html')
+                ->write('Page not found');;
         }
 
         $url = [ 'filter', 'name' ];
@@ -102,8 +103,7 @@ class ChemData
         ob_end_clean();
 
         if( curl_errno( $this->ch )){
-            $info = curl_getinfo($this->ch);
-            return $info['request_header'];
+            die( curl_error( $this->ch ) );
         }
 
         return $res;
@@ -119,7 +119,7 @@ class ChemData
         $queryId = json_decode( $queryId, true );
 
         if( curl_errno( $this->ch )){
-            return curl_error($this->ch);
+            die( curl_error( $this->ch ) );
         }
         //Check the query
         $check = $this->checkQuery( $queryId['queryId'] );
@@ -141,7 +141,7 @@ class ChemData
         $response = curl_exec( $this->ch );
         //Error handling
         if( curl_errno( $this->ch )){
-            return curl_error( $this->ch );
+            die( curl_error( $this->ch ) );
         }
         if( strcmp( $response['status'], 'Complete' ) === 0) {
             return true;
@@ -159,7 +159,7 @@ class ChemData
         $response = curl_exec( $this->ch );
         //Error handling
         if( curl_errno( $this->ch )){
-            return curl_error( $this->ch );
+            die( curl_error( $this->ch ) );
         }
 
         //Array if record ids
