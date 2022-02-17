@@ -55,7 +55,19 @@ class ChemData
         return $response->withHeader('Content-Type', 'application/json' )->withStatus( 200 );
     }
     public function getDataByFormula( Request $request, Response $response, $args ) : Response {
-        return $response;
+        $formula = strtoupper( trim( $args['formula'] ) );
+
+        if( !$formula ) {
+            return $response->withStatus( 404, 'No formula set' );
+        }
+
+        $url = [ 'filter', 'formula' ];
+        $params = ['formula' => "$formula"];
+
+        $result = $this->getData( $url, $params );
+
+        $response->getBody()->write( $result );
+        return $response->withHeader('Content-Type', 'application/json' )->withStatus( 200 );
     }
 
     //Retrieves data about the required element/formula
